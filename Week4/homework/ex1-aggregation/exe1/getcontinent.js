@@ -1,4 +1,3 @@
-
 import { connectToDatabase, closeDatabaseConnection } from "./connection.js";
 
 const getPopulationByCountry = async (age, year, Country) => {
@@ -6,53 +5,41 @@ const getPopulationByCountry = async (age, year, Country) => {
     const db = await connectToDatabase();
     const collection = db.collection("student");
 
-    const northAmerica = await collection.findOne({
-      Country: "NORTHERN AMERICA",
-    });
-    const southAmerica = await collection.findOne({
-      Country: "SOUTHERN AMERICA",
-    });
-    console.log("Northern America:", northAmerica);
-    console.log("Southern America:", southAmerica);
-
     const pipeline = [
       {
         $match: {
           Age: age,
           Year: year,
-          Country: { $in: Country }, 
+          Country: { $in: Country },
         },
       },
       {
         $addFields: {
-          M: { $toDouble: "$M" }, 
-          F: { $toDouble: "$F" }, 
+          M: { $toDouble: "$M" },
+          F: { $toDouble: "$F" },
         },
       },
       {
         $addFields: {
-          TotalPopulation: { $add: ["$M", "$F"] }, 
+          TotalPopulation: { $add: ["$M", "$F"] },
         },
+      },
+      {
+        $sort: { Country: 1 },
       },
       {
         $group: {
-          _id: "$Country", 
-          TotalPopulation: { $sum: "$TotalPopulation" }, 
-          M: { $sum: "$M" },
-          F: { $sum: "$F" },
-          Year: { $first: "$Year" }, 
-          Age: { $first: "$Age" }, 
+          _id: "$Country",
+          document: { $first: "$$ROOT" },
         },
       },
       {
-        $sort: { _id: 1 }, 
+        $replaceRoot: { newRoot: "$document" },
       },
     ];
 
-  
     const result = await collection.aggregate(pipeline).toArray();
     return result;
-
   } catch (error) {
     console.error("Error fetching data:", error);
     throw error;

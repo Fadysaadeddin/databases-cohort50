@@ -1,74 +1,80 @@
-import { connection } from './exe1.js';
-
-const authorsPerPaper = `
-  SELECT 
-    research_Papers.paper_title, 
-    COUNT(author_papers.author_id) AS NumberOfAuthors
-  FROM 
-    research_Papers
-  LEFT JOIN 
-    author_papers ON research_Papers.paper_id = author_papers.paper_id
-  GROUP BY 
-    research_Papers.paper_title;
-`;
-
-const femaleAuthorsPapers = `
-  SELECT 
-    COUNT(DISTINCT author_papers.paper_id) AS TotalPapers
-  FROM 
-    authors
-  JOIN 
-    author_papers ON authors.author_id = author_papers.author_id
-  WHERE 
-    authors.gender = 'Female';
-`;
-
-const averageHIndex = `
-  SELECT 
-    university, 
-    AVG(h_index) AS AverageHIndex
-  FROM 
-    authors
-  GROUP BY 
-    university;
-`;
-
-const papersPerUniversity = `
-  SELECT 
-    authors.university, 
-    COUNT( DISTINCT author_papers.paper_id) AS TotalPapers
-  FROM 
-    authors
-  LEFT JOIN 
-    author_papers ON authors.author_id = author_papers.author_id
-  GROUP BY 
-    authors.university;
-`;
-
+import { connection } from "./connection.js";
 
 const executeQueries = async () => {
   try {
-    
-    const [authorsPerPaperResults] = await connection.execute(authorsPerPaper);
-    console.log('Authors per paper:', authorsPerPaperResults);
+    console.log("Executing queries...");
 
-   
-    const [femaleAuthorsPapersResults] = await connection.execute(femaleAuthorsPapers);
-    console.log('Female authors papers:', femaleAuthorsPapersResults);
+    const queryResearchPapersAuthorsCount = `
+      SELECT r.paper_title, COUNT(ap.author_id) AS author_count
+      FROM research_papers r
+      LEFT JOIN author_papers ap ON r.paper_id = ap.paper_id
+      GROUP BY r.paper_title;
+    `;
 
-   
-    const [averageHIndexResults] = await connection.execute(averageHIndex);
-    console.log('Average h-index per university:', averageHIndexResults);
+    const [researchPapersAuthorsCount] = await connection.execute(
+      queryResearchPapersAuthorsCount
+    );
+    console.log(
+      "Research Papers and the number of authors that wrote that paper:"
+    );
+    console.table(researchPapersAuthorsCount);
 
-    
-    const [papersPerUniversityResults] = await connection.execute(papersPerUniversity);
-    console.log('Papers per university:', papersPerUniversityResults);
+    const queryFemaleAuthorsResearchCount = `
+      SELECT SUM(CASE WHEN a.gender = 'Female' THEN 1 ELSE 0 END) AS female_authors_paper_count
+      FROM authors a
+      LEFT JOIN author_papers ap ON a.author_id = ap.author_id;
+    `;
+
+    const [femaleAuthorsResearchCount] = await connection.execute(
+      queryFemaleAuthorsResearchCount
+    );
+    console.log("Sum of the research papers published by all female authors:");
+    console.table(femaleAuthorsResearchCount);
+
+    const queryAvgHIndexPerUniversity = `
+      SELECT a.university, AVG(a.h_index) AS avg_h_index
+      FROM authors a
+      GROUP BY a.university;
+    `;
+
+    const [avgHIndexPerUniversity] = await connection.execute(
+      queryAvgHIndexPerUniversity
+    );
+    console.log("Average of the h-index of all authors per university:");
+    console.table(avgHIndexPerUniversity);
+
+    const queryResearchCountPerUniversity = `
+      SELECT a.university, COUNT(ap.paper_id) AS paper_count
+      FROM authors a
+      LEFT JOIN author_papers ap ON a.author_id = ap.author_id
+      GROUP BY a.university;
+    `;
+
+    const [researchCountPerUniversity] = await connection.execute(
+      queryResearchCountPerUniversity
+    );
+    console.log("Sum of the research papers of the authors per university:");
+    console.table(researchCountPerUniversity);
+
+    const queryMinMaxHIndexPerUniversity = `
+      SELECT a.university, MIN(a.h_index) AS min_h_index, MAX(a.h_index) AS max_h_index
+      FROM authors a
+      GROUP BY a.university;
+    `;
+
+    const [minMaxHIndexPerUniversity] = await connection.execute(
+      queryMinMaxHIndexPerUniversity
+    );
+    console.log(
+      "Minimum and maximum of the h-index of all authors per university:"
+    );
+    console.table(minMaxHIndexPerUniversity);
   } catch (err) {
-    console.error('Error executing queries:', err.message);
+    console.error("Error executing queries:", err.message);
   } finally {
-    connection.end(); 
+    await connection.end();
+    console.log("Database connection closed.");
   }
 };
-
 
 await executeQueries();

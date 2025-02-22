@@ -1,44 +1,37 @@
+import { connection } from "./connection.js";
 
-import { connection } from './exe1.js';
-
-const getAuthorsAndMentors = async () => {
-  const sql = `
-    SELECT a.author_name AS author_name, m.author_name AS mentor_name
-    FROM authors a
-    LEFT JOIN authors m ON a.mentor = m.author_id;
-  `;
-
-  const [results] = await connection.query(sql);
-  console.log("Authors and their mentors:");
-  console.log(results);
-};
-
-const getAuthorsAndPapers = async () => {
-  const sql = `
-    SELECT a.*, p.paper_title
-    FROM authors a
-    LEFT JOIN author_papers ap ON a.author_id = ap.author_id
-    LEFT JOIN research_papers p ON ap.paper_id = p.paper_id;
-  `;
-
-  const [results] = await connection.query(sql);
-  console.log("Authors and their published papers:");
-  console.log(results);
-};
-
-const runQueries = async () => {
+const executeQueries = async () => {
   try {
-    console.log("Fetching authors and mentors...");
-    await getAuthorsAndMentors();
+    console.log("Executing queries...");
 
-    console.log("Fetching authors and published papers...");
-    await getAuthorsAndPapers();
+    const queryAuthorsMentors = `
+      SELECT a.author_name AS Author, 
+             COALESCE(m.author_name, 'No Mentor') AS Mentor
+      FROM authors a
+      LEFT JOIN authors m ON a.mentor = m.author_id;
+    `;
+
+    const [authorsMentors] = await connection.execute(queryAuthorsMentors);
+    console.log("Authors and their mentors:");
+    console.table(authorsMentors);
+
+    const queryAuthorsPapers = `
+      SELECT a.*, 
+             COALESCE(r.paper_title, 'No Research Paper') AS Paper_Title
+      FROM authors a
+      LEFT JOIN author_papers ap ON a.author_id = ap.author_id
+      LEFT JOIN research_papers r ON ap.paper_id = r.paper_id;
+    `;
+
+    const [authorsPapers] = await connection.execute(queryAuthorsPapers);
+    console.log("Authors and their research papers:");
+    console.table(authorsPapers);
   } catch (err) {
-    console.error("An error occurred while running the queries:", err.message);
+    console.error("Error executing queries:", err.message);
   } finally {
-    connection.end();
+    await connection.end();
     console.log("Database connection closed.");
   }
 };
 
-await runQueries();
+await executeQueries();

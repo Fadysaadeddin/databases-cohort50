@@ -59,38 +59,16 @@ const setupAuthorsTable = async () => {
 
     console.log("Authors inserted successfully.");
 
-    const [rows] = await connection.query(
-      "SELECT author_id, author_name FROM authors"
-    );
-    const authorIds = Object.fromEntries(
-      rows.map((row) => [row.author_name, row.author_id])
-    );
+    const authorCount = authorsWithoutMentors.length;
 
-    const mentorUpdates = [
-      ["John Doe", "Jane Smith"],
-      ["Jane Smith", "Michael Johnson"],
-      ["Michael Johnson", "John Doe"],
-      ["Emily Davis", "John Doe"],
-      ["Chris Brown", "Jane Smith"],
-      ["Laura Wilson", "Michael Johnson"],
-      ["David Miller", "John Doe"],
-      ["Sophia Taylor", "Jane Smith"],
-      ["James Anderson", "Michael Johnson"],
-      ["Olivia Thomas", "Jane Smith"],
-      ["William Martinez", "John Doe"],
-      ["Emma Garcia", "Michael Johnson"],
-      ["Liam Harris", "John Doe"],
-      ["Isabella Moore", "Jane Smith"],
-      ["Ethan Martinez", "Jane Smith"],
-    ];
+    for (let i = 0; i < authorCount; i++) {
+      const menteeId = i + 1;
+      const mentorId = ((i + 1) % authorCount) + 1;
 
-    for (const [menteeName, mentorName] of mentorUpdates) {
-      if (authorIds[menteeName] && authorIds[mentorName]) {
-        await connection.execute(
-          "UPDATE authors SET mentor = ? WHERE author_name = ?",
-          [authorIds[mentorName], menteeName]
-        );
-      }
+      await connection.execute(
+        "UPDATE authors SET mentor = ? WHERE author_id = ?",
+        [mentorId, menteeId]
+      );
     }
 
     console.log("Mentor relationships updated successfully.");

@@ -1,5 +1,4 @@
 import { connection } from "./connection.js";
-
 const executeQueries = async () => {
   try {
     console.log("Executing queries...");
@@ -20,9 +19,10 @@ const executeQueries = async () => {
     console.table(researchPapersAuthorsCount);
 
     const queryFemaleAuthorsResearchCount = `
-      SELECT SUM(CASE WHEN a.gender = 'Female' THEN 1 ELSE 0 END) AS female_authors_paper_count
+    SELECT COUNT(DISTINCT ap.paper_id) AS female_authors_paper_count
       FROM authors a
-      LEFT JOIN author_papers ap ON a.author_id = ap.author_id;
+      LEFT JOIN author_papers ap ON a.author_id = ap.author_id
+      WHERE a.gender = 'Female';
     `;
 
     const [femaleAuthorsResearchCount] = await connection.execute(
@@ -44,7 +44,7 @@ const executeQueries = async () => {
     console.table(avgHIndexPerUniversity);
 
     const queryResearchCountPerUniversity = `
-      SELECT a.university, COUNT(ap.paper_id) AS paper_count
+     SELECT a.university, COUNT(DISTINCT ap.paper_id) AS paper_count
       FROM authors a
       LEFT JOIN author_papers ap ON a.author_id = ap.author_id
       GROUP BY a.university;
